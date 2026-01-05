@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react'
-import { getSubscriptions, deleteSubscription, updateSubscription, subscribeToSubscriptions, migrateLocalToFirebase } from '../utils/storage'
+import { getSubscriptions, deleteSubscription, updateSubscription, subscribeToSubscriptions } from '../utils/storage'
 import { getDaysRemaining, formatDateArabic, isExpired, isExpiringSoon, calculateEndDate } from '../utils/dateUtils'
 import { Link } from 'react-router-dom'
+import ServiceIcon from './ServiceIcon'
+import ProgressRing from './ProgressRing'
+import CopyButton from './CopyButton'
+import NotificationBell from './NotificationBell'
 
 function Dashboard() {
   const [subscriptions, setSubscriptions] = useState([])
@@ -34,87 +38,7 @@ function Dashboard() {
     setSubscriptions(subs.sort((a, b) => new Date(a.endDate) - new Date(b.endDate)))
   }
 
-  const handleRestoreFromLocal = async () => {
-    if (window.confirm('هل تريد استعادة الاشتراكات القديمة من المتصفح؟\n\nسيتم نقل جميع الاشتراكات المحفوظة محلياً إلى Firebase.\n\nافتح Console (F12) لرؤية التفاصيل.')) {
-      try {
-        // فحص جميع المفاتيح أولاً
-        const { checkAllLocalStorageKeys } = await import('../utils/storage')
-        checkAllLocalStorageKeys()
-        
-        const { migrateLocalToFirebase } = await import('../utils/storage')
-        const result = await migrateLocalToFirebase()
-        if (result) {
-          alert('✅ تم استعادة الاشتراكات بنجاح!\n\nأعد تحميل الصفحة لرؤية جميع الاشتراكات.')
-          await loadSubscriptions()
-          // إعادة تحميل الصفحة بعد ثانيتين
-          setTimeout(() => {
-            window.location.reload()
-          }, 2000)
-        } else {
-          const message = 'ℹ️ لا توجد اشتراكات قديمة للاستعادة، أو تم نقلها مسبقاً.\n\n' +
-                         'افتح Console (F12) لرؤية جميع المفاتيح في localStorage.\n\n' +
-                         'إذا كانت لديك نسخة احتياطية (JSON)، استخدم زر "استيراد من ملف" أدناه.'
-          alert(message)
-        }
-      } catch (error) {
-        console.error('Error restoring:', error)
-        alert('❌ حدث خطأ أثناء الاستعادة.\n\nافتح Console (F12) لرؤية التفاصيل.')
-      }
-    }
-  }
 
-  const handleImportFromFile = () => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = '.json'
-    input.onchange = async (e) => {
-      const file = e.target.files[0]
-      if (!file) return
-
-      try {
-        const text = await file.text()
-        const data = JSON.parse(text)
-        
-        if (!Array.isArray(data)) {
-          alert('❌ الملف غير صحيح. يجب أن يحتوي على مصفوفة من الاشتراكات.')
-          return
-        }
-
-        if (data.length === 0) {
-          alert('ℹ️ الملف فارغ.')
-          return
-        }
-
-        if (window.confirm(`هل تريد استيراد ${data.length} اشتراك من الملف؟`)) {
-          const { addSubscription } = await import('../utils/storage')
-          let imported = 0
-          let errors = 0
-
-          for (const sub of data) {
-            try {
-              // تخطي id القديم
-              const { id, ...subData } = sub
-              await addSubscription(subData)
-              imported++
-            } catch (error) {
-              console.error('Error importing subscription:', error)
-              errors++
-            }
-          }
-
-          alert(`✅ تم استيراد ${imported} اشتراك بنجاح${errors > 0 ? `\n❌ ${errors} أخطاء` : ''}`)
-          await loadSubscriptions()
-          setTimeout(() => {
-            window.location.reload()
-          }, 1000)
-        }
-      } catch (error) {
-        console.error('Error reading file:', error)
-        alert('❌ حدث خطأ أثناء قراءة الملف. تأكد من أن الملف بصيغة JSON صحيحة.')
-      }
-    }
-    input.click()
-  }
 
   const handleDelete = async (id) => {
     if (window.confirm('هل أنت متأكد من حذف هذا الاشتراك؟')) {
@@ -223,11 +147,23 @@ function Dashboard() {
     const expiring = isExpiringSoon(endDate, 7)
 
     if (expired) {
-      return <span className="bg-red-100 text-red-800 px-3 py-1 rounded-full text-sm font-medium">منتهي</span>
+      return (
+        <span className="glass-card-light px-3 py-1.5 rounded-lg text-xs font-bold font-arabic border border-red-500/50 text-red-400">
+          ⛔ منتهي
+        </span>
+      )
     } else if (expiring) {
-      return <span className="bg-yellow-100 text-yellow-800 px-3 py-1 rounded-full text-sm font-medium">قريباً</span>
+      return (
+        <span className="glass-card-light px-3 py-1.5 rounded-lg text-xs font-bold font-arabic border border-yellow-500/50 text-yellow-400">
+          ⚠️ قريباً
+        </span>
+      )
     } else {
-      return <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm font-medium">نشط</span>
+      return (
+        <span className="glass-card-light px-3 py-1.5 rounded-lg text-xs font-bold font-arabic border border-green-500/50 text-green-400">
+          ✅ نشط
+        </span>
+      )
     }
   }
 
@@ -253,124 +189,160 @@ function Dashboard() {
 
   const filteredSubscriptions = filterSubscriptions(subscriptions)
 
+  // حساب الإحصائيات
+  const activeSubs = subscriptions.filter(sub => !isExpired(sub.endDate))
+  const expiringSubs = subscriptions.filter(sub => isExpiringSoon(sub.endDate, 7) && !isExpired(sub.endDate))
+  const expiredSubs = subscriptions.filter(sub => isExpired(sub.endDate))
+  const totalValue = activeSubs.length // يمكن حساب قيمة مالية لاحقاً
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <div className="flex justify-between items-center">
-          <div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">لوحة التحكم</h1>
-            <p className="text-gray-600">إدارة جميع الاشتراكات الخاصة بك</p>
-            <p className="text-sm text-gray-500 mt-1">
-              💾 البيانات تُحفظ تلقائياً في Firebase - لن تفقدها مرة أخرى
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={handleRestoreFromLocal}
-              className="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-              title="استعادة الاشتراكات القديمة من المتصفح"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+      {/* Summary Cards - Premium Design */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="glass-card rounded-2xl p-6 border border-premium-blue/30 glow-blue">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-premium-blue to-premium-blue/50 flex items-center justify-center">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
-              استعادة من المتصفح
-            </button>
-            <button
-              onClick={handleImportFromFile}
-              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-              title="استيراد الاشتراكات من ملف JSON"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-              </svg>
-              استيراد من ملف
-            </button>
+            </div>
+            <span className="text-premium-gold text-2xl font-bold font-arabic">{activeSubs.length}</span>
           </div>
+          <h3 className="text-white font-bold text-lg font-arabic mb-1">الاشتراكات النشطة</h3>
+          <p className="text-gray-400 text-sm font-arabic">رصيدك الحالي</p>
+        </div>
+
+        <div className="glass-card rounded-2xl p-6 border border-yellow-500/30">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <span className="text-yellow-400 text-2xl font-bold font-arabic">{expiringSubs.length}</span>
+          </div>
+          <h3 className="text-white font-bold text-lg font-arabic mb-1">قريبة من الانتهاء</h3>
+          <p className="text-gray-400 text-sm font-arabic">تحتاج تجديد</p>
+        </div>
+
+        <div className="glass-card rounded-2xl p-6 border border-red-500/30">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
+              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </div>
+            <span className="text-red-400 text-2xl font-bold font-arabic">{expiredSubs.length}</span>
+          </div>
+          <h3 className="text-white font-bold text-lg font-arabic mb-1">الاشتراكات المنتهية</h3>
+          <p className="text-gray-400 text-sm font-arabic">انتهت صلاحيتها</p>
+        </div>
+
+        <div className="glass-card rounded-2xl p-6 border border-premium-gold/30 glow-gold">
+          <div className="flex items-center justify-between mb-4">
+            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-premium-gold to-yellow-400 flex items-center justify-center">
+              <svg className="w-6 h-6 text-premium-navy" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            </div>
+            <span className="text-premium-gold text-2xl font-bold font-arabic">{subscriptions.length}</span>
+          </div>
+          <h3 className="text-white font-bold text-lg font-arabic mb-1">إجمالي الاشتراكات</h3>
+          <p className="text-gray-400 text-sm font-arabic">جميع العملاء</p>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="mb-6 flex flex-wrap gap-4">
-        <button
-          onClick={() => setFilter('all')}
-          className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-            filter === 'all' 
-              ? 'bg-indigo-600 text-white' 
-              : 'bg-white text-gray-700 hover:bg-gray-100'
-          }`}
-        >
-          الكل
-        </button>
-        <button
-          onClick={() => setFilter('active')}
-          className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-            filter === 'active' 
-              ? 'bg-indigo-600 text-white' 
-              : 'bg-white text-gray-700 hover:bg-gray-100'
-          }`}
-        >
-          النشطة
-        </button>
-        <button
-          onClick={() => setFilter('expiring')}
-          className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-            filter === 'expiring' 
-              ? 'bg-indigo-600 text-white' 
-              : 'bg-white text-gray-700 hover:bg-gray-100'
-          }`}
-        >
-          قريبة من الانتهاء
-        </button>
-        <button
-          onClick={() => setFilter('expired')}
-          className={`px-6 py-2 rounded-lg font-medium transition-colors ${
-            filter === 'expired' 
-              ? 'bg-indigo-600 text-white' 
-              : 'bg-white text-gray-700 hover:bg-gray-100'
-          }`}
-        >
-          المنتهية
-        </button>
-      </div>
+      {/* Filters - Premium Design */}
+      <div className="glass-card rounded-2xl p-6 mb-6 border border-white/10">
+        <div className="flex flex-wrap gap-3 mb-6">
+          <button
+            onClick={() => setFilter('all')}
+            className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 font-arabic ${
+              filter === 'all' 
+                ? 'btn-premium text-white' 
+                : 'glass-card-light text-gray-300 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            الكل ({subscriptions.length})
+          </button>
+          <button
+            onClick={() => setFilter('active')}
+            className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 font-arabic ${
+              filter === 'active' 
+                ? 'btn-premium text-white' 
+                : 'glass-card-light text-gray-300 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            النشطة ({activeSubs.length})
+          </button>
+          <button
+            onClick={() => setFilter('expiring')}
+            className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 font-arabic ${
+              filter === 'expiring' 
+                ? 'btn-premium text-white' 
+                : 'glass-card-light text-gray-300 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            قريبة من الانتهاء ({expiringSubs.length})
+          </button>
+          <button
+            onClick={() => setFilter('expired')}
+            className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 font-arabic ${
+              filter === 'expired' 
+                ? 'btn-premium text-white' 
+                : 'glass-card-light text-gray-300 hover:text-white hover:bg-white/10'
+            }`}
+          >
+            المنتهية ({expiredSubs.length})
+          </button>
+        </div>
 
-      {/* Search and Category Filter */}
-      <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Advanced Search */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-2">
-              البحث (الاسم أو نوع الاشتراك)
+            <label htmlFor="search" className="block text-sm font-medium text-gray-300 mb-2 font-arabic">
+              🔍 البحث (الاسم، الخدمة، أو النوع)
             </label>
             <input
               type="text"
               id="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              className="w-full px-4 py-3 glass-card-light border border-white/10 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-premium-blue focus:border-premium-blue outline-none font-arabic"
               placeholder="ابحث بالاسم أو نوع الاشتراك..."
             />
           </div>
           <div>
-            <label htmlFor="categoryFilter" className="block text-sm font-medium text-gray-700 mb-2">
-              تصفية حسب نوع الاشتراك
+            <label htmlFor="categoryFilter" className="block text-sm font-medium text-gray-300 mb-2 font-arabic">
+              📂 تصفية حسب نوع الاشتراك
             </label>
             <select
               id="categoryFilter"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              className="w-full px-4 py-3 glass-card-light border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-premium-blue focus:border-premium-blue outline-none font-arabic"
             >
-              <option value="all">جميع الأنواع</option>
+              <option value="all" className="bg-premium-navy">جميع الأنواع</option>
               {getAllCategories().map(cat => (
-                <option key={cat} value={cat}>{cat}</option>
+                <option key={cat} value={cat} className="bg-premium-navy">{cat}</option>
               ))}
             </select>
+          </div>
+          <div className="flex items-end">
+            <Link
+              to="/add"
+              className="w-full btn-premium text-white px-6 py-3 rounded-xl font-bold text-center font-arabic"
+            >
+              ➕ إضافة اشتراك جديد
+            </Link>
           </div>
         </div>
       </div>
 
-      {/* Subscriptions by Duration */}
+      {/* Subscriptions by Duration - Hidden to avoid duplication */}
+      {false && (
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">الاشتراكات حسب المدة</h2>
+        <h2 className="text-3xl font-bold text-white font-arabic mb-6">الاشتراكات حسب المدة</h2>
         <div className="space-y-4">
           {durations.map(d => {
             const durationSubs = getSubscriptionsByDuration(d.value)
@@ -378,19 +350,19 @@ function Dashboard() {
             const isExpanded = expandedCategory === d.value
 
             return (
-              <div key={d.value} className="bg-white rounded-xl shadow-lg overflow-hidden">
+              <div key={d.value} className="glass-card rounded-2xl overflow-hidden border border-white/10">
                 <button
                   onClick={() => setExpandedCategory(isExpanded ? null : d.value)}
-                  className="w-full px-6 py-4 flex justify-between items-center hover:bg-gray-50 transition-colors"
+                  className="w-full px-6 py-4 flex justify-between items-center hover:bg-white/5 transition-colors"
                 >
                   <div className="flex items-center gap-4">
-                    <h3 className="text-xl font-bold text-gray-900">{d.label}</h3>
-                    <span className="bg-indigo-100 text-indigo-800 px-3 py-1 rounded-full text-sm font-medium">
+                    <h3 className="text-xl font-bold text-white font-arabic">{d.label}</h3>
+                    <span className="glass-card-light px-4 py-1.5 rounded-lg text-sm font-bold text-premium-gold border border-premium-gold/30 font-arabic">
                       {filteredSubs.length} اشتراك
                     </span>
                   </div>
                   <svg
-                    className={`w-6 h-6 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                    className={`w-6 h-6 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -400,87 +372,87 @@ function Dashboard() {
                 </button>
 
                 {isExpanded && (
-                  <div className="px-6 py-4 border-t">
+                  <div className="px-6 py-4 border-t border-white/10">
                     {filteredSubs.length === 0 ? (
-                      <p className="text-gray-500 text-center py-8">لا توجد اشتراكات في هذه الفئة</p>
+                      <p className="text-gray-400 text-center py-8 font-arabic">لا توجد اشتراكات في هذه الفئة</p>
                     ) : (
                       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                         {filteredSubs.map((subscription) => {
-                          const daysRemaining = getDaysRemaining(subscription.endDate)
                           const isEditing = editingId === subscription.id
 
                           if (isEditing) {
                             return (
                               <div
                                 key={subscription.id}
-                                className="bg-indigo-50 rounded-lg p-4 border-2 border-indigo-200"
+                                className="glass-card rounded-xl p-4 border-2 border-premium-blue/50"
                               >
                                 <div className="space-y-3">
+                                  <h4 className="text-white font-bold font-arabic mb-3">✏️ تعديل الاشتراك</h4>
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">اسم الشخص</label>
+                                    <label className="block text-xs font-medium text-gray-300 mb-1 font-arabic">اسم الشخص</label>
                                     <input
                                       type="text"
                                       name="personName"
                                       value={editFormData.personName}
                                       onChange={handleEditChange}
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                      className="w-full px-3 py-2 glass-card-light border border-white/10 rounded-lg text-sm text-white placeholder-gray-400 focus:ring-2 focus:ring-premium-blue outline-none font-arabic"
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">اسم الاشتراك</label>
+                                    <label className="block text-xs font-medium text-gray-300 mb-1 font-arabic">اسم الاشتراك</label>
                                     <input
                                       type="text"
                                       name="subscriptionName"
                                       value={editFormData.subscriptionName}
                                       onChange={handleEditChange}
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                      className="w-full px-3 py-2 glass-card-light border border-white/10 rounded-lg text-sm text-white placeholder-gray-400 focus:ring-2 focus:ring-premium-blue outline-none font-arabic"
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">نوع الاشتراك</label>
+                                    <label className="block text-xs font-medium text-gray-300 mb-1 font-arabic">نوع الاشتراك</label>
                                     <input
                                       type="text"
                                       name="category"
                                       value={editFormData.category}
                                       onChange={handleEditChange}
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                      className="w-full px-3 py-2 glass-card-light border border-white/10 rounded-lg text-sm text-white placeholder-gray-400 focus:ring-2 focus:ring-premium-blue outline-none font-arabic"
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">تاريخ البداية</label>
+                                    <label className="block text-xs font-medium text-gray-300 mb-1 font-arabic">تاريخ البداية</label>
                                     <input
                                       type="date"
                                       name="startDate"
                                       value={editFormData.startDate}
                                       onChange={handleEditChange}
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                      className="w-full px-3 py-2 glass-card-light border border-white/10 rounded-lg text-sm text-white focus:ring-2 focus:ring-premium-blue outline-none font-arabic"
                                     />
                                   </div>
                                   <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">المدة</label>
+                                    <label className="block text-xs font-medium text-gray-300 mb-1 font-arabic">المدة</label>
                                     <select
                                       name="duration"
                                       value={editFormData.duration}
                                       onChange={handleEditChange}
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                                      className="w-full px-3 py-2 glass-card-light border border-white/10 rounded-lg text-sm text-white focus:ring-2 focus:ring-premium-blue outline-none font-arabic"
                                     >
                                       {durations.map(d => (
-                                        <option key={d.value} value={d.value}>{d.label}</option>
+                                        <option key={d.value} value={d.value} className="bg-premium-navy">{d.label}</option>
                                       ))}
                                     </select>
                                   </div>
                                   <div className="flex gap-2 pt-2">
                                     <button
                                       onClick={() => handleSaveEdit(subscription.id)}
-                                      className="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700"
+                                      className="flex-1 btn-premium text-white py-2 rounded-lg text-sm font-medium font-arabic"
                                     >
-                                      حفظ
+                                      ✅ حفظ
                                     </button>
                                     <button
                                       onClick={handleCancelEdit}
-                                      className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-300"
+                                      className="flex-1 glass-card-light text-gray-300 hover:text-white py-2 rounded-lg text-sm font-medium border border-white/10 font-arabic"
                                     >
-                                      إلغاء
+                                      ❌ إلغاء
                                     </button>
                                   </div>
                                 </div>
@@ -488,68 +460,74 @@ function Dashboard() {
                             )
                           }
 
+                          const daysRemaining = getDaysRemaining(subscription.endDate)
+                          const startDate = new Date(subscription.startDate)
+                          const endDate = new Date(subscription.endDate)
+                          const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))
+                          const progressPercentage = daysRemaining > 0 ? (daysRemaining / totalDays) * 100 : 0
+                          
+                          const subscriptionData = `العميل: ${subscription.personName}\nالخدمة: ${subscription.subscriptionName}\nالنوع: ${subscription.category || 'غير محدد'}\nتاريخ البداية: ${formatDateArabic(subscription.startDate)}\nتاريخ الانتهاء: ${formatDateArabic(subscription.endDate)}\nالمدة المتبقية: ${daysRemaining > 0 ? `${daysRemaining} يوم` : 'منتهي'}`
+
                           return (
                             <div
                               key={subscription.id}
-                              className="bg-gray-50 rounded-lg p-4 border border-gray-200 hover:shadow-md transition-shadow"
+                              className="glass-card rounded-xl p-4 border border-white/10 hover:border-premium-blue/50 transition-all duration-300"
                             >
-                              <div className="flex justify-between items-start mb-3">
-                                <div className="flex-1">
-                                  <h4 className="text-lg font-bold text-gray-900 mb-1">
-                                    {subscription.personName}
-                                  </h4>
-                                  <p className="text-gray-600 text-sm mb-1">{subscription.subscriptionName}</p>
-                                  {subscription.category && (
-                                    <span className="inline-block bg-indigo-100 text-indigo-800 px-2 py-1 rounded text-xs font-medium">
-                                      {subscription.category}
-                                    </span>
-                                  )}
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-3 flex-1">
+                                  <ServiceIcon serviceName={subscription.subscriptionName || subscription.category} />
+                                  <div className="flex-1">
+                                    <h4 className="text-white font-bold font-arabic mb-1">
+                                      {subscription.personName}
+                                    </h4>
+                                    <p className="text-gray-300 text-sm font-arabic mb-1">{subscription.subscriptionName}</p>
+                                    {subscription.category && (
+                                      <span className="inline-block glass-card-light px-2 py-1 rounded text-xs font-medium text-premium-gold border border-premium-gold/30 font-arabic">
+                                        {subscription.category}
+                                      </span>
+                                    )}
+                                  </div>
                                 </div>
-                                <div className="flex gap-2">
-                                  <button
-                                    onClick={() => handleEdit(subscription)}
-                                    className="text-indigo-600 hover:text-indigo-800 transition-colors"
-                                    title="تعديل"
-                                  >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                                    </svg>
-                                  </button>
-                                  <button
-                                    onClick={() => handleDelete(subscription.id)}
-                                    className="text-red-600 hover:text-red-800 transition-colors"
-                                    title="حذف"
-                                  >
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                    </svg>
-                                  </button>
+                                <div className="flex flex-col items-end gap-2">
+                                  {getStatusBadge(subscription.endDate)}
+                                  <CopyButton text={subscriptionData} label="نسخ" />
                                 </div>
                               </div>
-                              <div className="space-y-1 text-sm">
+                              <div className="flex items-center justify-center my-3">
+                                <ProgressRing 
+                                  percentage={Math.max(0, Math.min(100, progressPercentage))} 
+                                  daysRemaining={daysRemaining > 0 ? daysRemaining : 0}
+                                  size={50}
+                                  strokeWidth={5}
+                                />
+                              </div>
+                              <div className="space-y-1 text-sm glass-card-light rounded-lg p-3 border border-white/5 mb-3">
                                 <div className="flex justify-between">
-                                  <span className="text-gray-600">تاريخ البداية:</span>
-                                  <span className="font-medium">{formatDateArabic(subscription.startDate)}</span>
+                                  <span className="text-gray-400 font-arabic">تاريخ البداية:</span>
+                                  <span className="text-white font-medium font-arabic">{formatDateArabic(subscription.startDate)}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                  <span className="text-gray-600">تاريخ الانتهاء:</span>
-                                  <span className="font-medium">{formatDateArabic(subscription.endDate)}</span>
-                                </div>
-                                <div className="flex justify-between pt-2 border-t">
-                                  <span className="text-gray-600 font-semibold">المتبقي:</span>
-                                  <span className={`font-bold ${
-                                    daysRemaining < 0 ? 'text-red-600' :
-                                    daysRemaining <= 7 ? 'text-yellow-600' :
-                                    'text-green-600'
+                                  <span className="text-gray-400 font-arabic">تاريخ الانتهاء:</span>
+                                  <span className={`font-medium font-arabic ${
+                                    daysRemaining <= 7 ? 'text-red-400' : 'text-white'
                                   }`}>
-                                    {daysRemaining < 0 
-                                      ? `منتهي منذ ${Math.abs(daysRemaining)} يوم`
-                                      : daysRemaining === 0
-                                      ? 'ينتهي اليوم!'
-                                      : `متبقي ${daysRemaining} يوم`
-                                    }
+                                    {formatDateArabic(subscription.endDate)}
                                   </span>
                                 </div>
+                              </div>
+                              <div className="flex gap-2 pt-2 border-t border-white/10">
+                                <button
+                                  onClick={() => handleEdit(subscription)}
+                                  className="flex-1 btn-premium text-white py-2 rounded-lg text-sm font-medium font-arabic"
+                                >
+                                  ✏️ تعديل
+                                </button>
+                                <button
+                                  onClick={() => handleDelete(subscription.id)}
+                                  className="flex-1 glass-card-light text-red-400 hover:text-red-300 py-2 rounded-lg text-sm font-medium font-arabic border border-red-500/30"
+                                >
+                                  🗑️ حذف
+                                </button>
                               </div>
                             </div>
                           )
@@ -563,18 +541,35 @@ function Dashboard() {
           })}
         </div>
       </div>
+      )}
 
       {/* All Subscriptions View */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">جميع الاشتراكات</h2>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-3xl font-bold text-white font-arabic">جميع الاشتراكات</h2>
+          <Link
+            to="/add"
+            className="btn-premium text-white px-6 py-3 rounded-xl font-medium font-arabic flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            إضافة اشتراك جديد
+          </Link>
+        </div>
         {filteredSubscriptions.length === 0 ? (
-          <div className="bg-white rounded-xl shadow-lg p-12 text-center">
-            <p className="text-gray-500 text-lg mb-4">لا توجد اشتراكات</p>
+          <div className="glass-card rounded-2xl p-12 text-center border border-white/10">
+            <div className="w-20 h-20 mx-auto mb-4 rounded-full bg-gradient-to-br from-premium-blue/20 to-premium-gold/20 flex items-center justify-center">
+              <svg className="w-10 h-10 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+              </svg>
+            </div>
+            <p className="text-gray-400 text-lg mb-6 font-arabic">لا توجد اشتراكات</p>
             <Link
               to="/add"
-              className="inline-block bg-indigo-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-indigo-700 transition-colors"
+              className="inline-block btn-premium text-white px-8 py-3 rounded-xl font-medium font-arabic"
             >
-              إضافة اشتراك جديد
+              ➕ إضافة اشتراك جديد
             </Link>
           </div>
         ) : (
@@ -586,75 +581,75 @@ function Dashboard() {
                 return (
                   <div
                     key={subscription.id}
-                    className="bg-indigo-50 rounded-xl shadow-lg p-6 border-2 border-indigo-200"
+                    className="glass-card rounded-2xl p-6 border-2 border-premium-blue/50"
                   >
-                    <h3 className="text-lg font-bold text-gray-900 mb-4">تعديل الاشتراك</h3>
+                    <h3 className="text-xl font-bold text-white mb-4 font-arabic">✏️ تعديل الاشتراك</h3>
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">اسم الشخص</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2 font-arabic">اسم الشخص</label>
                         <input
                           type="text"
                           name="personName"
                           value={editFormData.personName}
                           onChange={handleEditChange}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          className="w-full px-4 py-2 glass-card-light border border-white/10 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-premium-blue outline-none font-arabic"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">اسم الاشتراك</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2 font-arabic">اسم الاشتراك</label>
                         <input
                           type="text"
                           name="subscriptionName"
                           value={editFormData.subscriptionName}
                           onChange={handleEditChange}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          className="w-full px-4 py-2 glass-card-light border border-white/10 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-premium-blue outline-none font-arabic"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">نوع الاشتراك</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2 font-arabic">نوع الاشتراك</label>
                         <input
                           type="text"
                           name="category"
                           value={editFormData.category}
                           onChange={handleEditChange}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          className="w-full px-4 py-2 glass-card-light border border-white/10 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-premium-blue outline-none font-arabic"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">تاريخ البداية</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2 font-arabic">تاريخ البداية</label>
                         <input
                           type="date"
                           name="startDate"
                           value={editFormData.startDate}
                           onChange={handleEditChange}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          className="w-full px-4 py-2 glass-card-light border border-white/10 rounded-lg text-white focus:ring-2 focus:ring-premium-blue outline-none font-arabic"
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">المدة</label>
+                        <label className="block text-sm font-medium text-gray-300 mb-2 font-arabic">المدة</label>
                         <select
                           name="duration"
                           value={editFormData.duration}
                           onChange={handleEditChange}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg"
+                          className="w-full px-4 py-2 glass-card-light border border-white/10 rounded-lg text-white focus:ring-2 focus:ring-premium-blue outline-none font-arabic"
                         >
                           {durations.map(d => (
-                            <option key={d.value} value={d.value}>{d.label}</option>
+                            <option key={d.value} value={d.value} className="bg-premium-navy">{d.label}</option>
                           ))}
                         </select>
                       </div>
                       <div className="flex gap-4 pt-4">
                         <button
                           onClick={() => handleSaveEdit(subscription.id)}
-                          className="flex-1 bg-indigo-600 text-white py-2 rounded-lg font-medium hover:bg-indigo-700"
+                          className="flex-1 btn-premium text-white py-2.5 rounded-xl font-medium font-arabic"
                         >
-                          حفظ
+                          ✅ حفظ
                         </button>
                         <button
                           onClick={handleCancelEdit}
-                          className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-medium hover:bg-gray-300"
+                          className="flex-1 glass-card-light text-gray-300 hover:text-white py-2.5 rounded-xl font-medium border border-white/10 font-arabic"
                         >
-                          إلغاء
+                          ❌ إلغاء
                         </button>
                       </div>
                     </div>
@@ -662,62 +657,88 @@ function Dashboard() {
                 )
               }
 
+              const daysRemaining = getDaysRemaining(subscription.endDate)
+              const startDate = new Date(subscription.startDate)
+              const endDate = new Date(subscription.endDate)
+              const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))
+              const progressPercentage = daysRemaining > 0 ? (daysRemaining / totalDays) * 100 : 0
+              
+              // بيانات للنسخ
+              const subscriptionData = `العميل: ${subscription.personName}\nالخدمة: ${subscription.subscriptionName}\nالنوع: ${subscription.category || 'غير محدد'}\nتاريخ البداية: ${formatDateArabic(subscription.startDate)}\nتاريخ الانتهاء: ${formatDateArabic(subscription.endDate)}\nالمدة المتبقية: ${daysRemaining > 0 ? `${daysRemaining} يوم` : 'منتهي'}`
+
               return (
                 <div
                   key={subscription.id}
-                  className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow"
+                  className="glass-card rounded-2xl p-6 border border-white/10 hover:border-premium-blue/50 transition-all duration-300 hover:shadow-2xl hover:shadow-premium-blue/20 group"
                 >
-                  <div className="flex justify-between items-start mb-4">
-                    <div>
-                      <h3 className="text-xl font-bold text-gray-900 mb-1">
-                        {subscription.personName}
-                      </h3>
-                      <p className="text-gray-600 text-sm">{subscription.subscriptionName}</p>
-                      {subscription.category && (
-                        <span className="inline-block bg-indigo-100 text-indigo-800 px-2 py-1 rounded text-xs font-medium mt-1">
-                          {subscription.category}
-                        </span>
-                      )}
+                  {/* Header with Icon and Status */}
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex items-center gap-4 flex-1">
+                      <ServiceIcon serviceName={subscription.subscriptionName || subscription.category} />
+                      <div className="flex-1">
+                        <h3 className="text-white font-bold text-lg font-arabic mb-1 group-hover:text-premium-gold transition-colors">
+                          {subscription.personName}
+                        </h3>
+                        <p className="text-gray-300 text-sm font-arabic mb-2">{subscription.subscriptionName}</p>
+                        {subscription.category && (
+                          <span className="inline-block glass-card-light px-3 py-1 rounded-lg text-xs font-medium text-premium-gold border border-premium-gold/30 font-arabic">
+                            {subscription.category}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                    {getStatusBadge(subscription.endDate)}
+                    <div className="flex flex-col items-end gap-2">
+                      {getStatusBadge(subscription.endDate)}
+                      <CopyButton text={subscriptionData} label="نسخ" />
+                    </div>
                   </div>
 
-                  <div className="space-y-2 mb-4">
+                  {/* Progress Ring */}
+                  <div className="flex items-center justify-center mb-4 py-4">
+                    <ProgressRing 
+                      percentage={Math.max(0, Math.min(100, progressPercentage))} 
+                      daysRemaining={daysRemaining > 0 ? daysRemaining : 0}
+                    />
+                  </div>
+
+                  {/* Details */}
+                  <div className="space-y-2 mb-4 glass-card-light rounded-xl p-4 border border-white/5">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">تاريخ البداية:</span>
-                      <span className="font-medium">{formatDateArabic(subscription.startDate)}</span>
+                      <span className="text-gray-400 text-sm font-arabic">تاريخ البداية:</span>
+                      <span className="text-white font-medium font-arabic">{formatDateArabic(subscription.startDate)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-600">تاريخ الانتهاء:</span>
-                      <span className="font-medium">{formatDateArabic(subscription.endDate)}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">المدة:</span>
-                      <span className="font-medium">
-                        {subscription.duration === 'month' && 'شهر'}
-                        {subscription.duration === '3months' && '3 أشهر'}
-                        {subscription.duration === '6months' && '6 أشهر'}
-                        {subscription.duration === 'year' && 'سنة'}
+                      <span className="text-gray-400 text-sm font-arabic">تاريخ الانتهاء:</span>
+                      <span className={`font-medium font-arabic ${
+                        daysRemaining <= 7 ? 'text-red-400' : 'text-white'
+                      }`}>
+                        {formatDateArabic(subscription.endDate)}
                       </span>
                     </div>
-                    <div className="flex justify-between items-center pt-2 border-t">
-                      <span className="text-gray-600 font-semibold">المتبقي:</span>
-                      {getDaysRemainingBadge(subscription.endDate)}
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400 text-sm font-arabic">المدة:</span>
+                      <span className="text-white font-medium font-arabic">
+                        {subscription.duration === 'month' && 'شهر واحد'}
+                        {subscription.duration === '3months' && '3 أشهر'}
+                        {subscription.duration === '6months' && '6 أشهر'}
+                        {subscription.duration === 'year' && 'سنة واحدة'}
+                      </span>
                     </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  {/* Actions */}
+                  <div className="flex gap-2 pt-4 border-t border-white/10">
                     <button
                       onClick={() => handleEdit(subscription)}
-                      className="flex-1 bg-indigo-50 text-indigo-600 py-2 rounded-lg font-medium hover:bg-indigo-100 transition-colors"
+                      className="flex-1 btn-premium text-white py-2.5 rounded-xl font-medium font-arabic transition-all duration-300"
                     >
-                      تعديل
+                      ✏️ تعديل
                     </button>
                     <button
                       onClick={() => handleDelete(subscription.id)}
-                      className="flex-1 bg-red-50 text-red-600 py-2 rounded-lg font-medium hover:bg-red-100 transition-colors"
+                      className="flex-1 glass-card-light text-red-400 hover:text-red-300 py-2.5 rounded-xl font-medium font-arabic border border-red-500/30 hover:border-red-500/50 transition-all duration-300"
                     >
-                      حذف
+                      🗑️ حذف
                     </button>
                   </div>
                 </div>
