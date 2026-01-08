@@ -31,8 +31,8 @@ function Navbar() {
       setSubscriptions(subs)
     }
     loadSubscriptions()
-    const interval = setInterval(loadSubscriptions, 1000)
-    return () => clearInterval(interval)
+    //const interval = setInterval(loadSubscriptions, 1000)
+    //return () => clearInterval(interval)
   }, [])
 
   const activeCount = subscriptions.filter(sub => {
