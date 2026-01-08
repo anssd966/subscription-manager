@@ -34,39 +34,39 @@ function Renewals() {
   const filteredSubscriptions = getFilteredSubscriptions()
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-white font-arabic mb-2">⏰ الاشتراكات القادمة للتجديد</h1>
-        <p className="text-gray-400 font-arabic">عرض الاشتراكات التي تحتاج إلى تجديد</p>
+    <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
+      <div className="mb-4 sm:mb-6 lg:mb-8">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-white font-arabic mb-2">⏰ الاشتراكات القادمة للتجديد</h1>
+        <p className="text-gray-400 text-sm sm:text-base font-arabic">عرض الاشتراكات التي تحتاج إلى تجديد</p>
       </div>
 
-      <div className="glass-card rounded-2xl p-6 mb-6 border border-white/10">
-        <div className="flex flex-wrap gap-4 mb-4">
+      <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 border border-white/10">
+        <div className="flex flex-wrap gap-2 sm:gap-4 mb-4">
           <button
             onClick={() => setViewMode('date')}
-            className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 font-arabic ${
+            className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm lg:text-base font-medium transition-all duration-300 font-arabic ${
               viewMode === 'date' 
                 ? 'btn-premium text-white' 
                 : 'glass-card-light text-gray-300 hover:text-white hover:bg-white/10'
             }`}
           >
-            📅 حسب تاريخ محدد
+            📅 <span className="hidden sm:inline">حسب تاريخ محدد</span><span className="sm:hidden">تاريخ</span>
           </button>
           <button
             onClick={() => setViewMode('range')}
-            className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 font-arabic ${
+            className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm lg:text-base font-medium transition-all duration-300 font-arabic ${
               viewMode === 'range' 
                 ? 'btn-premium text-white' 
                 : 'glass-card-light text-gray-300 hover:text-white hover:bg-white/10'
             }`}
           >
-            📊 حسب نطاق زمني
+            📊 <span className="hidden sm:inline">حسب نطاق زمني</span><span className="sm:hidden">نطاق</span>
           </button>
         </div>
 
         {viewMode === 'date' ? (
           <div>
-            <label htmlFor="selectedDate" className="block text-sm font-medium text-gray-300 mb-2 font-arabic">
+            <label htmlFor="selectedDate" className="block text-xs sm:text-sm font-medium text-gray-300 mb-2 font-arabic">
               اختر التاريخ
             </label>
             <input
@@ -74,16 +74,16 @@ function Renewals() {
               id="selectedDate"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="w-full md:w-auto px-4 py-3 glass-card-light border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-premium-blue focus:border-premium-blue outline-none font-arabic"
+              className="w-full md:w-auto px-3 sm:px-4 py-2 sm:py-3 glass-card-light border border-white/10 rounded-lg sm:rounded-xl text-sm sm:text-base text-white focus:ring-2 focus:ring-premium-blue focus:border-premium-blue outline-none font-arabic"
             />
-            <p className="mt-2 text-sm text-gray-400 font-arabic">
+            <p className="mt-2 text-xs sm:text-sm text-gray-400 font-arabic">
               الاشتراكات التي تنتهي في: {formatDateArabic(selectedDate)}
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div>
-              <label htmlFor="rangeStart" className="block text-sm font-medium text-gray-300 mb-2 font-arabic">
+              <label htmlFor="rangeStart" className="block text-xs sm:text-sm font-medium text-gray-300 mb-2 font-arabic">
                 من تاريخ
               </label>
               <input
@@ -91,11 +91,11 @@ function Renewals() {
                 id="rangeStart"
                 value={rangeStart}
                 onChange={(e) => setRangeStart(e.target.value)}
-                className="w-full px-4 py-3 glass-card-light border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-premium-blue focus:border-premium-blue outline-none font-arabic"
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 glass-card-light border border-white/10 rounded-lg sm:rounded-xl text-sm sm:text-base text-white focus:ring-2 focus:ring-premium-blue focus:border-premium-blue outline-none font-arabic"
               />
             </div>
             <div>
-              <label htmlFor="rangeEnd" className="block text-sm font-medium text-gray-300 mb-2 font-arabic">
+              <label htmlFor="rangeEnd" className="block text-xs sm:text-sm font-medium text-gray-300 mb-2 font-arabic">
                 إلى تاريخ
               </label>
               <input
@@ -103,10 +103,10 @@ function Renewals() {
                 id="rangeEnd"
                 value={rangeEnd}
                 onChange={(e) => setRangeEnd(e.target.value)}
-                className="w-full px-4 py-3 glass-card-light border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-premium-blue focus:border-premium-blue outline-none font-arabic"
+                className="w-full px-3 sm:px-4 py-2 sm:py-3 glass-card-light border border-white/10 rounded-lg sm:rounded-xl text-sm sm:text-base text-white focus:ring-2 focus:ring-premium-blue focus:border-premium-blue outline-none font-arabic"
               />
             </div>
-            <p className="md:col-span-2 mt-2 text-sm text-gray-400 font-arabic">
+            <p className="md:col-span-2 mt-2 text-xs sm:text-sm text-gray-400 font-arabic">
               الاشتراكات التي تنتهي بين {formatDateArabic(rangeStart)} و {formatDateArabic(rangeEnd)}
             </p>
           </div>
@@ -114,8 +114,8 @@ function Renewals() {
       </div>
 
       {filteredSubscriptions.length === 0 ? (
-        <div className="glass-card rounded-2xl p-12 text-center border border-white/10">
-          <p className="text-gray-400 text-lg font-arabic">
+        <div className="glass-card rounded-xl sm:rounded-2xl p-8 sm:p-12 text-center border border-white/10">
+          <p className="text-gray-400 text-base sm:text-lg font-arabic">
             {viewMode === 'date' 
               ? `لا توجد اشتراكات تنتهي في ${formatDateArabic(selectedDate)}`
               : `لا توجد اشتراكات تنتهي في النطاق المحدد`
@@ -124,14 +124,14 @@ function Renewals() {
         </div>
       ) : (
         <div>
-          <div className="mb-6">
-            <div className="glass-card-light px-6 py-3 rounded-xl border border-premium-blue/30 inline-block">
-              <p className="text-lg font-semibold text-white font-arabic">
+          <div className="mb-4 sm:mb-6">
+            <div className="glass-card-light px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl border border-premium-blue/30 inline-block">
+              <p className="text-base sm:text-lg font-semibold text-white font-arabic">
                 عدد الاشتراكات: <span className="text-premium-gold">{filteredSubscriptions.length}</span>
               </p>
             </div>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredSubscriptions.map((subscription) => {
               const daysRemaining = getDaysRemaining(subscription.endDate)
               const startDate = new Date(subscription.startDate)
@@ -144,7 +144,7 @@ function Renewals() {
               return (
                 <div
                   key={subscription.id}
-                  className="glass-card rounded-2xl p-6 border border-red-500/30 hover:border-red-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-red-500/20"
+                  className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-red-500/30 hover:border-red-500/50 transition-all duration-300 hover:shadow-2xl hover:shadow-red-500/20"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3 flex-1">

@@ -11,10 +11,18 @@
     direction: rtl;
     background: linear-gradient(135deg, #0A1929 0%, #0F172A 50%, #1E293B 100%);
     min-height: 100vh;
+    overflow-x: hidden;
   }
 
   * {
     box-sizing: border-box;
+  }
+
+  /* تحسينات للشاشات الصغيرة */
+  @media (max-width: 640px) {
+    body {
+      font-size: 14px;
+    }
   }
 }
 

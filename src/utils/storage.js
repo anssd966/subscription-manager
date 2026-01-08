@@ -161,8 +161,14 @@ export const getSubscriptions = async () => {
       const q = query(collection(db, COLLECTION_NAME), orderBy('endDate', 'asc'))
       const querySnapshot = await getDocs(q)
       const subscriptions = []
+      const seenIds = new Set() // لمنع التكرار
+      
       querySnapshot.forEach((doc) => {
-        subscriptions.push({ id: doc.id, ...doc.data() })
+        // التحقق من عدم وجود تكرار
+        if (!seenIds.has(doc.id)) {
+          seenIds.add(doc.id)
+          subscriptions.push({ id: doc.id, ...doc.data() })
+        }
       })
       
       console.log(`✅ Loaded ${subscriptions.length} subscriptions from Firebase`)
@@ -184,8 +190,13 @@ export const getSubscriptions = async () => {
               // إعادة جلب البيانات بعد النقل
               const newQuerySnapshot = await getDocs(q)
               subscriptions.length = 0 // مسح القائمة
+              seenIds.clear() // مسح Set أيضاً
               newQuerySnapshot.forEach((doc) => {
-                subscriptions.push({ id: doc.id, ...doc.data() })
+                // التحقق من عدم وجود تكرار
+                if (!seenIds.has(doc.id)) {
+                  seenIds.add(doc.id)
+                  subscriptions.push({ id: doc.id, ...doc.data() })
+                }
               })
               console.log(`✅ Loaded ${subscriptions.length} subscriptions after migration`)
             }
@@ -196,8 +207,14 @@ export const getSubscriptions = async () => {
             if (migrated) {
               // إعادة جلب البيانات بعد النقل
               const newQuerySnapshot = await getDocs(q)
+              subscriptions.length = 0 // مسح القائمة
+              seenIds.clear() // مسح Set أيضاً
               newQuerySnapshot.forEach((doc) => {
-                subscriptions.push({ id: doc.id, ...doc.data() })
+                // التحقق من عدم وجود تكرار
+                if (!seenIds.has(doc.id)) {
+                  seenIds.add(doc.id)
+                  subscriptions.push({ id: doc.id, ...doc.data() })
+                }
               })
               console.log(`✅ Loaded ${subscriptions.length} subscriptions after migration`)
             }
@@ -266,11 +283,18 @@ export const subscribeToSubscriptions = (callback) => {
     const q = query(collection(db, COLLECTION_NAME), orderBy('endDate', 'asc'))
     return onSnapshot(q, (querySnapshot) => {
       const subscriptions = []
+      const seenIds = new Set() // لمنع التكرار
+      
       querySnapshot.forEach((doc) => {
-        subscriptions.push({ id: doc.id, ...doc.data() })
+        // التحقق من عدم وجود تكرار
+        if (!seenIds.has(doc.id)) {
+          seenIds.add(doc.id)
+          subscriptions.push({ id: doc.id, ...doc.data() })
+        }
       })
+      
       console.log(`🔄 Real-time update: ${subscriptions.length} subscriptions`)
-      // حفظ نسخة محلية
+      // حفظ نسخة محلية (استبدال كامل لمنع التكرار)
       localStorage.setItem('subscriptions_backup', JSON.stringify(subscriptions))
       localStorage.setItem(STORAGE_KEY, JSON.stringify(subscriptions))
       callback(subscriptions)
@@ -325,10 +349,8 @@ export const addSubscription = async (subscription) => {
       const docRef = await addDoc(collection(db, COLLECTION_NAME), newSubscription)
       console.log('✅ Successfully added to Firebase with ID:', docRef.id)
       
-      // إضافة إلى localStorage كنسخة احتياطية
-      const localSubs = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
-      localSubs.push({ id: docRef.id, ...newSubscription })
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(localSubs))
+      // لا نحتاج لإضافة localStorage يدوياً هنا لأن Firebase listener سيقوم بذلك تلقائياً
+      // هذا يمنع التكرار عند فتح الموقع مرتين
       
       return { id: docRef.id, ...newSubscription }
     } catch (error) {
@@ -386,13 +408,11 @@ export const deleteSubscription = async (id) => {
     // حذف من Firebase
     await deleteDoc(doc(db, COLLECTION_NAME, id))
     
-    // حذف من localStorage
-    const subscriptions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
-    const filtered = subscriptions.filter(sub => sub.id !== id)
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered))
+    // لا نحتاج لحذف من localStorage يدوياً لأن Firebase listener سيقوم بذلك تلقائياً
+    // هذا يمنع أي مشاكل محتملة مع التكرار
   } catch (error) {
     console.error('Error deleting subscription from Firebase:', error)
-    // Fallback إلى localStorage
+    // Fallback إلى localStorage فقط في حالة الخطأ
     const subscriptions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
     const filtered = subscriptions.filter(sub => sub.id !== id)
     localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered))
@@ -422,18 +442,19 @@ export const updateSubscription = async (id, updates) => {
     const subRef = doc(db, COLLECTION_NAME, id)
     await updateDoc(subRef, updates)
     
-    // تحديث في localStorage
+    // لا نحتاج لتحديث localStorage يدوياً لأن Firebase listener سيقوم بذلك تلقائياً
+    // هذا يمنع أي مشاكل محتملة مع التكرار
+    
+    // إرجاع البيانات المحدثة (سيتم تحديثها من listener)
     const subscriptions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
     const index = subscriptions.findIndex(sub => sub.id === id)
     if (index !== -1) {
-      subscriptions[index] = { ...subscriptions[index], ...updates }
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(subscriptions))
-      return subscriptions[index]
+      return { ...subscriptions[index], ...updates }
     }
     return null
   } catch (error) {
     console.error('Error updating subscription in Firebase:', error)
-    // Fallback إلى localStorage
+    // Fallback إلى localStorage فقط في حالة الخطأ
     const subscriptions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
     const index = subscriptions.findIndex(sub => sub.id === id)
     if (index !== -1) {

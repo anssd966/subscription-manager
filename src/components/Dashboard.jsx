@@ -196,68 +196,68 @@ function Dashboard() {
   const totalValue = activeSubs.length // يمكن حساب قيمة مالية لاحقاً
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-3 sm:px-4 lg:px-8 py-4 sm:py-6 lg:py-8">
       {/* Summary Cards - Premium Design */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="glass-card rounded-2xl p-6 border border-premium-blue/30 glow-blue">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-premium-blue to-premium-blue/50 flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8">
+        <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-premium-blue/30 glow-blue">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-premium-blue to-premium-blue/50 flex items-center justify-center">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <span className="text-premium-gold text-2xl font-bold font-arabic">{activeSubs.length}</span>
+            <span className="text-premium-gold text-xl sm:text-2xl font-bold font-arabic">{activeSubs.length}</span>
           </div>
-          <h3 className="text-white font-bold text-lg font-arabic mb-1">الاشتراكات النشطة</h3>
-          <p className="text-gray-400 text-sm font-arabic">رصيدك الحالي</p>
+          <h3 className="text-white font-bold text-base sm:text-lg font-arabic mb-1">الاشتراكات النشطة</h3>
+          <p className="text-gray-400 text-xs sm:text-sm font-arabic">رصيدك الحالي</p>
         </div>
 
-        <div className="glass-card rounded-2xl p-6 border border-yellow-500/30">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-yellow-500/30">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <span className="text-yellow-400 text-2xl font-bold font-arabic">{expiringSubs.length}</span>
+            <span className="text-yellow-400 text-xl sm:text-2xl font-bold font-arabic">{expiringSubs.length}</span>
           </div>
-          <h3 className="text-white font-bold text-lg font-arabic mb-1">قريبة من الانتهاء</h3>
-          <p className="text-gray-400 text-sm font-arabic">تحتاج تجديد</p>
+          <h3 className="text-white font-bold text-base sm:text-lg font-arabic mb-1">قريبة من الانتهاء</h3>
+          <p className="text-gray-400 text-xs sm:text-sm font-arabic">تحتاج تجديد</p>
         </div>
 
-        <div className="glass-card rounded-2xl p-6 border border-red-500/30">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-red-500/30">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-red-500 to-red-600 flex items-center justify-center">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </div>
-            <span className="text-red-400 text-2xl font-bold font-arabic">{expiredSubs.length}</span>
+            <span className="text-red-400 text-xl sm:text-2xl font-bold font-arabic">{expiredSubs.length}</span>
           </div>
-          <h3 className="text-white font-bold text-lg font-arabic mb-1">الاشتراكات المنتهية</h3>
-          <p className="text-gray-400 text-sm font-arabic">انتهت صلاحيتها</p>
+          <h3 className="text-white font-bold text-base sm:text-lg font-arabic mb-1">الاشتراكات المنتهية</h3>
+          <p className="text-gray-400 text-xs sm:text-sm font-arabic">انتهت صلاحيتها</p>
         </div>
 
-        <div className="glass-card rounded-2xl p-6 border border-premium-gold/30 glow-gold">
-          <div className="flex items-center justify-between mb-4">
-            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-premium-gold to-yellow-400 flex items-center justify-center">
-              <svg className="w-6 h-6 text-premium-navy" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-premium-gold/30 glow-gold">
+          <div className="flex items-center justify-between mb-3 sm:mb-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-gradient-to-br from-premium-gold to-yellow-400 flex items-center justify-center">
+              <svg className="w-5 h-5 sm:w-6 sm:h-6 text-premium-navy" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </div>
-            <span className="text-premium-gold text-2xl font-bold font-arabic">{subscriptions.length}</span>
+            <span className="text-premium-gold text-xl sm:text-2xl font-bold font-arabic">{subscriptions.length}</span>
           </div>
-          <h3 className="text-white font-bold text-lg font-arabic mb-1">إجمالي الاشتراكات</h3>
-          <p className="text-gray-400 text-sm font-arabic">جميع العملاء</p>
+          <h3 className="text-white font-bold text-base sm:text-lg font-arabic mb-1">إجمالي الاشتراكات</h3>
+          <p className="text-gray-400 text-xs sm:text-sm font-arabic">جميع العملاء</p>
         </div>
       </div>
 
       {/* Filters - Premium Design */}
-      <div className="glass-card rounded-2xl p-6 mb-6 border border-white/10">
-        <div className="flex flex-wrap gap-3 mb-6">
+      <div className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6 mb-4 sm:mb-6 border border-white/10">
+        <div className="flex flex-wrap gap-2 sm:gap-3 mb-4 sm:mb-6">
           <button
             onClick={() => setFilter('all')}
-            className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 font-arabic ${
+            className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm lg:text-base font-medium transition-all duration-300 font-arabic ${
               filter === 'all' 
                 ? 'btn-premium text-white' 
                 : 'glass-card-light text-gray-300 hover:text-white hover:bg-white/10'
@@ -267,7 +267,7 @@ function Dashboard() {
           </button>
           <button
             onClick={() => setFilter('active')}
-            className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 font-arabic ${
+            className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm lg:text-base font-medium transition-all duration-300 font-arabic ${
               filter === 'active' 
                 ? 'btn-premium text-white' 
                 : 'glass-card-light text-gray-300 hover:text-white hover:bg-white/10'
@@ -277,17 +277,18 @@ function Dashboard() {
           </button>
           <button
             onClick={() => setFilter('expiring')}
-            className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 font-arabic ${
+            className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm lg:text-base font-medium transition-all duration-300 font-arabic ${
               filter === 'expiring' 
                 ? 'btn-premium text-white' 
                 : 'glass-card-light text-gray-300 hover:text-white hover:bg-white/10'
             }`}
           >
-            قريبة من الانتهاء ({expiringSubs.length})
+            <span className="hidden sm:inline">قريبة من الانتهاء</span>
+            <span className="sm:hidden">قريبة</span> ({expiringSubs.length})
           </button>
           <button
             onClick={() => setFilter('expired')}
-            className={`px-6 py-3 rounded-xl font-medium transition-all duration-300 font-arabic ${
+            className={`px-3 sm:px-4 lg:px-6 py-2 sm:py-2.5 lg:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm lg:text-base font-medium transition-all duration-300 font-arabic ${
               filter === 'expired' 
                 ? 'btn-premium text-white' 
                 : 'glass-card-light text-gray-300 hover:text-white hover:bg-white/10'
@@ -298,29 +299,29 @@ function Dashboard() {
         </div>
 
         {/* Advanced Search */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-300 mb-2 font-arabic">
-              🔍 البحث (الاسم، الخدمة، أو النوع)
+            <label htmlFor="search" className="block text-xs sm:text-sm font-medium text-gray-300 mb-2 font-arabic">
+              🔍 البحث
             </label>
             <input
               type="text"
               id="search"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-3 glass-card-light border border-white/10 rounded-xl text-white placeholder-gray-400 focus:ring-2 focus:ring-premium-blue focus:border-premium-blue outline-none font-arabic"
+              className="w-full px-3 sm:px-4 py-2 sm:py-3 glass-card-light border border-white/10 rounded-lg sm:rounded-xl text-sm sm:text-base text-white placeholder-gray-400 focus:ring-2 focus:ring-premium-blue focus:border-premium-blue outline-none font-arabic"
               placeholder="ابحث بالاسم أو نوع الاشتراك..."
             />
           </div>
           <div>
-            <label htmlFor="categoryFilter" className="block text-sm font-medium text-gray-300 mb-2 font-arabic">
-              📂 تصفية حسب نوع الاشتراك
+            <label htmlFor="categoryFilter" className="block text-xs sm:text-sm font-medium text-gray-300 mb-2 font-arabic">
+              📂 التصنيف
             </label>
             <select
               id="categoryFilter"
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="w-full px-4 py-3 glass-card-light border border-white/10 rounded-xl text-white focus:ring-2 focus:ring-premium-blue focus:border-premium-blue outline-none font-arabic"
+              className="w-full px-3 sm:px-4 py-2 sm:py-3 glass-card-light border border-white/10 rounded-lg sm:rounded-xl text-sm sm:text-base text-white focus:ring-2 focus:ring-premium-blue focus:border-premium-blue outline-none font-arabic"
             >
               <option value="all" className="bg-premium-navy">جميع الأنواع</option>
               {getAllCategories().map(cat => (
@@ -331,18 +332,17 @@ function Dashboard() {
           <div className="flex items-end">
             <Link
               to="/add"
-              className="w-full btn-premium text-white px-6 py-3 rounded-xl font-bold text-center font-arabic"
+              className="w-full btn-premium text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm lg:text-base font-bold text-center font-arabic"
             >
-              ➕ إضافة اشتراك جديد
+              ➕ <span className="hidden sm:inline">إضافة اشتراك جديد</span><span className="sm:hidden">إضافة</span>
             </Link>
           </div>
         </div>
       </div>
 
-      {/* Subscriptions by Duration - Hidden to avoid duplication */}
-      {false && (
-      <div className="mb-6">
-        <h2 className="text-3xl font-bold text-white font-arabic mb-6">الاشتراكات حسب المدة</h2>
+      {/* Subscriptions by Duration */}
+      <div className="mb-4 sm:mb-6">
+        <h2 className="text-2xl sm:text-3xl font-bold text-white font-arabic mb-4 sm:mb-6">الاشتراكات حسب المدة</h2>
         <div className="space-y-4">
           {durations.map(d => {
             const durationSubs = getSubscriptionsByDuration(d.value)
@@ -541,20 +541,20 @@ function Dashboard() {
           })}
         </div>
       </div>
-      )}
 
       {/* All Subscriptions View */}
-      <div className="mb-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-3xl font-bold text-white font-arabic">جميع الاشتراكات</h2>
+      <div className="mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white font-arabic">جميع الاشتراكات</h2>
           <Link
             to="/add"
-            className="btn-premium text-white px-6 py-3 rounded-xl font-medium font-arabic flex items-center gap-2"
+            className="w-full sm:w-auto btn-premium text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl text-sm sm:text-base font-medium font-arabic flex items-center justify-center gap-2"
           >
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            إضافة اشتراك جديد
+            <span className="hidden sm:inline">إضافة اشتراك جديد</span>
+            <span className="sm:hidden">إضافة</span>
           </Link>
         </div>
         {filteredSubscriptions.length === 0 ? (
@@ -573,7 +573,7 @@ function Dashboard() {
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             {filteredSubscriptions.map((subscription) => {
               const isEditing = editingId === subscription.id
 
@@ -669,32 +669,32 @@ function Dashboard() {
               return (
                 <div
                   key={subscription.id}
-                  className="glass-card rounded-2xl p-6 border border-white/10 hover:border-premium-blue/50 transition-all duration-300 hover:shadow-2xl hover:shadow-premium-blue/20 group"
+                  className="glass-card rounded-xl sm:rounded-2xl p-4 sm:p-6 border border-white/10 hover:border-premium-blue/50 transition-all duration-300 hover:shadow-2xl hover:shadow-premium-blue/20 group"
                 >
                   {/* Header with Icon and Status */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex items-center gap-4 flex-1">
+                  <div className="flex items-start justify-between mb-3 sm:mb-4">
+                    <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
                       <ServiceIcon serviceName={subscription.subscriptionName || subscription.category} />
-                      <div className="flex-1">
-                        <h3 className="text-white font-bold text-lg font-arabic mb-1 group-hover:text-premium-gold transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-white font-bold text-base sm:text-lg font-arabic mb-1 group-hover:text-premium-gold transition-colors truncate">
                           {subscription.personName}
                         </h3>
-                        <p className="text-gray-300 text-sm font-arabic mb-2">{subscription.subscriptionName}</p>
+                        <p className="text-gray-300 text-xs sm:text-sm font-arabic mb-2 truncate">{subscription.subscriptionName}</p>
                         {subscription.category && (
-                          <span className="inline-block glass-card-light px-3 py-1 rounded-lg text-xs font-medium text-premium-gold border border-premium-gold/30 font-arabic">
+                          <span className="inline-block glass-card-light px-2 sm:px-3 py-0.5 sm:py-1 rounded-lg text-xs font-medium text-premium-gold border border-premium-gold/30 font-arabic">
                             {subscription.category}
                           </span>
                         )}
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-2">
+                    <div className="flex flex-col items-end gap-1 sm:gap-2 flex-shrink-0">
                       {getStatusBadge(subscription.endDate)}
                       <CopyButton text={subscriptionData} label="نسخ" />
                     </div>
                   </div>
 
                   {/* Progress Ring */}
-                  <div className="flex items-center justify-center mb-4 py-4">
+                  <div className="flex items-center justify-center mb-3 sm:mb-4 py-2 sm:py-4">
                     <ProgressRing 
                       percentage={Math.max(0, Math.min(100, progressPercentage))} 
                       daysRemaining={daysRemaining > 0 ? daysRemaining : 0}
@@ -702,22 +702,22 @@ function Dashboard() {
                   </div>
 
                   {/* Details */}
-                  <div className="space-y-2 mb-4 glass-card-light rounded-xl p-4 border border-white/5">
+                  <div className="space-y-1.5 sm:space-y-2 mb-3 sm:mb-4 glass-card-light rounded-lg sm:rounded-xl p-3 sm:p-4 border border-white/5">
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400 text-sm font-arabic">تاريخ البداية:</span>
-                      <span className="text-white font-medium font-arabic">{formatDateArabic(subscription.startDate)}</span>
+                      <span className="text-gray-400 text-xs sm:text-sm font-arabic">تاريخ البداية:</span>
+                      <span className="text-white font-medium text-xs sm:text-sm font-arabic">{formatDateArabic(subscription.startDate)}</span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400 text-sm font-arabic">تاريخ الانتهاء:</span>
-                      <span className={`font-medium font-arabic ${
+                      <span className="text-gray-400 text-xs sm:text-sm font-arabic">تاريخ الانتهاء:</span>
+                      <span className={`font-medium text-xs sm:text-sm font-arabic ${
                         daysRemaining <= 7 ? 'text-red-400' : 'text-white'
                       }`}>
                         {formatDateArabic(subscription.endDate)}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
-                      <span className="text-gray-400 text-sm font-arabic">المدة:</span>
-                      <span className="text-white font-medium font-arabic">
+                      <span className="text-gray-400 text-xs sm:text-sm font-arabic">المدة:</span>
+                      <span className="text-white font-medium text-xs sm:text-sm font-arabic">
                         {subscription.duration === 'month' && 'شهر واحد'}
                         {subscription.duration === '3months' && '3 أشهر'}
                         {subscription.duration === '6months' && '6 أشهر'}
@@ -727,16 +727,16 @@ function Dashboard() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex gap-2 pt-4 border-t border-white/10">
+                  <div className="flex gap-2 pt-3 sm:pt-4 border-t border-white/10">
                     <button
                       onClick={() => handleEdit(subscription)}
-                      className="flex-1 btn-premium text-white py-2.5 rounded-xl font-medium font-arabic transition-all duration-300"
+                      className="flex-1 btn-premium text-white py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium font-arabic transition-all duration-300"
                     >
                       ✏️ تعديل
                     </button>
                     <button
                       onClick={() => handleDelete(subscription.id)}
-                      className="flex-1 glass-card-light text-red-400 hover:text-red-300 py-2.5 rounded-xl font-medium font-arabic border border-red-500/30 hover:border-red-500/50 transition-all duration-300"
+                      className="flex-1 glass-card-light text-red-400 hover:text-red-300 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium font-arabic border border-red-500/30 hover:border-red-500/50 transition-all duration-300"
                     >
                       🗑️ حذف
                     </button>
