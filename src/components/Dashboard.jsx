@@ -21,11 +21,19 @@ function Dashboard() {
     startDate: '',
     duration: 'month'
   })
+  const [expiringDays, setExpiringDays] = useState(7) // عدد الأيام قبل الانتهاء
 
   useEffect(() => {
     // استخدام الاستماع الفوري من Firebase
     const unsubscribe = subscribeToSubscriptions((subs) => {
-      setSubscriptions(subs.sort((a, b) => new Date(a.endDate) - new Date(b.endDate)))
+      // إزالة التكرارات بناءً على ID
+      const uniqueSubs = subs.reduce((acc, sub) => {
+        if (!acc.find(s => s.id === sub.id)) {
+          acc.push(sub)
+        }
+        return acc
+      }, [])
+      setSubscriptions(uniqueSubs.sort((a, b) => new Date(a.endDate) - new Date(b.endDate)))
     })
     
     return () => {
@@ -35,7 +43,14 @@ function Dashboard() {
 
   const loadSubscriptions = async () => {
     const subs = await getSubscriptions()
-    setSubscriptions(subs.sort((a, b) => new Date(a.endDate) - new Date(b.endDate)))
+    // إزالة التكرارات بناءً على ID
+    const uniqueSubs = subs.reduce((acc, sub) => {
+      if (!acc.find(s => s.id === sub.id)) {
+        acc.push(sub)
+      }
+      return acc
+    }, [])
+    setSubscriptions(uniqueSubs.sort((a, b) => new Date(a.endDate) - new Date(b.endDate)))
   }
 
 
@@ -87,6 +102,25 @@ function Dashboard() {
     loadSubscriptions()
   }
 
+  const handleRenew = async (subscription) => {
+    if (!window.confirm(`هل تريد تجديد اشتراك ${subscription.personName}؟`)) {
+      return
+    }
+
+    // تجديد الاشتراك من تاريخ اليوم
+    const newStartDate = new Date().toISOString().split('T')[0]
+    const newEndDate = calculateEndDate(newStartDate, subscription.duration)
+    
+    await updateSubscription(subscription.id, {
+      ...subscription,
+      startDate: newStartDate,
+      endDate: newEndDate
+    })
+
+    alert('تم تجديد الاشتراك بنجاح!')
+    loadSubscriptions()
+  }
+
   const handleEditChange = (e) => {
     setEditFormData({
       ...editFormData,
@@ -105,7 +139,7 @@ function Dashboard() {
     filtered = filtered.filter(sub => {
       const daysRemaining = getDaysRemaining(sub.endDate)
       const expired = isExpired(sub.endDate)
-      const expiring = isExpiringSoon(sub.endDate, 7)
+      const expiring = isExpiringSoon(sub.endDate, expiringDays)
 
       if (filter === 'active') return !expired
       if (filter === 'expired') return expired
@@ -144,7 +178,7 @@ function Dashboard() {
   const getStatusBadge = (endDate) => {
     const daysRemaining = getDaysRemaining(endDate)
     const expired = isExpired(endDate)
-    const expiring = isExpiringSoon(endDate, 7)
+    const expiring = isExpiringSoon(endDate, expiringDays)
 
     if (expired) {
       return (
@@ -170,13 +204,34 @@ function Dashboard() {
   const getDaysRemainingBadge = (endDate) => {
     const days = getDaysRemaining(endDate)
     if (days < 0) {
-      return <span className="text-red-600 font-bold">منتهي منذ {Math.abs(days)} يوم</span>
+      const daysExpired = Math.abs(days)
+      if (daysExpired === 1) {
+        return <span className="text-red-600 font-bold">منتهي منذ يوم</span>
+      } else {
+        return <span className="text-red-600 font-bold">منتهي منذ {daysExpired} يوم</span>
+      }
     } else if (days === 0) {
-      return <span className="text-red-600 font-bold">ينتهي اليوم!</span>
+      return <span className="text-red-600 font-bold">0 يوم</span>
     } else if (days <= 7) {
       return <span className="text-yellow-600 font-bold">متبقي {days} يوم</span>
     } else {
       return <span className="text-gray-700">متبقي {days} يوم</span>
+    }
+  }
+
+  const getDaysRemainingText = (endDate) => {
+    const days = getDaysRemaining(endDate)
+    if (days < 0) {
+      const daysExpired = Math.abs(days)
+      if (daysExpired === 1) {
+        return 'منتهي منذ يوم'
+      } else {
+        return `منتهي منذ ${daysExpired} يوم`
+      }
+    } else if (days === 0) {
+      return '0 يوم'
+    } else {
+      return `متبقي ${days} يوم`
     }
   }
 
@@ -191,7 +246,7 @@ function Dashboard() {
 
   // حساب الإحصائيات
   const activeSubs = subscriptions.filter(sub => !isExpired(sub.endDate))
-  const expiringSubs = subscriptions.filter(sub => isExpiringSoon(sub.endDate, 7) && !isExpired(sub.endDate))
+  const expiringSubs = subscriptions.filter(sub => isExpiringSoon(sub.endDate, expiringDays) && !isExpired(sub.endDate))
   const expiredSubs = subscriptions.filter(sub => isExpired(sub.endDate))
   const totalValue = activeSubs.length // يمكن حساب قيمة مالية لاحقاً
 
@@ -299,7 +354,7 @@ function Dashboard() {
         </div>
 
         {/* Advanced Search */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           <div>
             <label htmlFor="search" className="block text-xs sm:text-sm font-medium text-gray-300 mb-2 font-arabic">
               🔍 البحث
@@ -328,6 +383,21 @@ function Dashboard() {
                 <option key={cat} value={cat} className="bg-premium-navy">{cat}</option>
               ))}
             </select>
+          </div>
+          <div>
+            <label htmlFor="expiringDays" className="block text-xs sm:text-sm font-medium text-gray-300 mb-2 font-arabic">
+              ⏰ مدة الانتهاء (أيام)
+            </label>
+            <input
+              type="number"
+              id="expiringDays"
+              min="1"
+              max="30"
+              value={expiringDays}
+              onChange={(e) => setExpiringDays(parseInt(e.target.value) || 7)}
+              className="w-full px-3 sm:px-4 py-2 sm:py-3 glass-card-light border border-white/10 rounded-lg sm:rounded-xl text-sm sm:text-base text-white focus:ring-2 focus:ring-premium-blue focus:border-premium-blue outline-none font-arabic"
+              placeholder="عدد الأيام"
+            />
           </div>
           <div className="flex items-end">
             <Link
@@ -466,7 +536,7 @@ function Dashboard() {
                           const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24))
                           const progressPercentage = daysRemaining > 0 ? (daysRemaining / totalDays) * 100 : 0
                           
-                          const subscriptionData = `العميل: ${subscription.personName}\nالخدمة: ${subscription.subscriptionName}\nالنوع: ${subscription.category || 'غير محدد'}\nتاريخ البداية: ${formatDateArabic(subscription.startDate)}\nتاريخ الانتهاء: ${formatDateArabic(subscription.endDate)}\nالمدة المتبقية: ${daysRemaining > 0 ? `${daysRemaining} يوم` : 'منتهي'}`
+                          const subscriptionData = `العميل: ${subscription.personName}\nالخدمة: ${subscription.subscriptionName}\nالنوع: ${subscription.category || 'غير محدد'}\nتاريخ البداية: ${formatDateArabic(subscription.startDate)}\nتاريخ الانتهاء: ${formatDateArabic(subscription.endDate)}\nالمدة المتبقية: ${getDaysRemainingText(subscription.endDate)}`
 
                           return (
                             <div
@@ -496,7 +566,9 @@ function Dashboard() {
                               <div className="flex items-center justify-center my-3">
                                 <ProgressRing 
                                   percentage={Math.max(0, Math.min(100, progressPercentage))} 
-                                  daysRemaining={daysRemaining > 0 ? daysRemaining : 0}
+                                  daysRemaining={daysRemaining}
+                                  endDate={subscription.endDate}
+                                  getDaysRemainingText={getDaysRemainingText}
                                   size={50}
                                   strokeWidth={5}
                                 />
@@ -516,12 +588,21 @@ function Dashboard() {
                                 </div>
                               </div>
                               <div className="flex gap-2 pt-2 border-t border-white/10">
-                                <button
-                                  onClick={() => handleEdit(subscription)}
-                                  className="flex-1 btn-premium text-white py-2 rounded-lg text-sm font-medium font-arabic"
-                                >
-                                  ✏️ تعديل
-                                </button>
+                                {isExpired(subscription.endDate) ? (
+                                  <button
+                                    onClick={() => handleRenew(subscription)}
+                                    className="flex-1 btn-premium text-white py-2 rounded-lg text-sm font-medium font-arabic"
+                                  >
+                                    🔄 تجديد
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => handleEdit(subscription)}
+                                    className="flex-1 btn-premium text-white py-2 rounded-lg text-sm font-medium font-arabic"
+                                  >
+                                    ✏️ تعديل
+                                  </button>
+                                )}
                                 <button
                                   onClick={() => handleDelete(subscription.id)}
                                   className="flex-1 glass-card-light text-red-400 hover:text-red-300 py-2 rounded-lg text-sm font-medium font-arabic border border-red-500/30"
@@ -545,7 +626,9 @@ function Dashboard() {
       {/* All Subscriptions View */}
       <div className="mb-4 sm:mb-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
-          <h2 className="text-2xl sm:text-3xl font-bold text-white font-arabic">جميع الاشتراكات</h2>
+          <h2 className="text-2xl sm:text-3xl font-bold text-white font-arabic">
+            {filter === 'expired' ? 'الاشتراكات المنتهية' : filter === 'active' ? 'الاشتراكات النشطة' : 'جميع الاشتراكات'}
+          </h2>
           <Link
             to="/add"
             className="w-full sm:w-auto btn-premium text-white px-4 sm:px-6 py-2 sm:py-3 rounded-lg sm:rounded-xl text-sm sm:text-base font-medium font-arabic flex items-center justify-center gap-2"
@@ -664,7 +747,7 @@ function Dashboard() {
               const progressPercentage = daysRemaining > 0 ? (daysRemaining / totalDays) * 100 : 0
               
               // بيانات للنسخ
-              const subscriptionData = `العميل: ${subscription.personName}\nالخدمة: ${subscription.subscriptionName}\nالنوع: ${subscription.category || 'غير محدد'}\nتاريخ البداية: ${formatDateArabic(subscription.startDate)}\nتاريخ الانتهاء: ${formatDateArabic(subscription.endDate)}\nالمدة المتبقية: ${daysRemaining > 0 ? `${daysRemaining} يوم` : 'منتهي'}`
+              const subscriptionData = `العميل: ${subscription.personName}\nالخدمة: ${subscription.subscriptionName}\nالنوع: ${subscription.category || 'غير محدد'}\nتاريخ البداية: ${formatDateArabic(subscription.startDate)}\nتاريخ الانتهاء: ${formatDateArabic(subscription.endDate)}\nالمدة المتبقية: ${getDaysRemainingText(subscription.endDate)}`
 
               return (
                 <div
@@ -697,7 +780,9 @@ function Dashboard() {
                   <div className="flex items-center justify-center mb-3 sm:mb-4 py-2 sm:py-4">
                     <ProgressRing 
                       percentage={Math.max(0, Math.min(100, progressPercentage))} 
-                      daysRemaining={daysRemaining > 0 ? daysRemaining : 0}
+                      daysRemaining={daysRemaining}
+                      endDate={subscription.endDate}
+                      getDaysRemainingText={getDaysRemainingText}
                     />
                   </div>
 
@@ -728,12 +813,21 @@ function Dashboard() {
 
                   {/* Actions */}
                   <div className="flex gap-2 pt-3 sm:pt-4 border-t border-white/10">
-                    <button
-                      onClick={() => handleEdit(subscription)}
-                      className="flex-1 btn-premium text-white py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium font-arabic transition-all duration-300"
-                    >
-                      ✏️ تعديل
-                    </button>
+                    {isExpired(subscription.endDate) ? (
+                      <button
+                        onClick={() => handleRenew(subscription)}
+                        className="flex-1 btn-premium text-white py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium font-arabic transition-all duration-300"
+                      >
+                        🔄 تجديد
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleEdit(subscription)}
+                        className="flex-1 btn-premium text-white py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium font-arabic transition-all duration-300"
+                      >
+                        ✏️ تعديل
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDelete(subscription.id)}
                       className="flex-1 glass-card-light text-red-400 hover:text-red-300 py-2 sm:py-2.5 rounded-lg sm:rounded-xl text-xs sm:text-sm font-medium font-arabic border border-red-500/30 hover:border-red-500/50 transition-all duration-300"

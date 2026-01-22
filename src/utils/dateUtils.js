@@ -19,8 +19,11 @@ export const calculateEndDate = (startDate, duration) => {
 
 export const getDaysRemaining = (endDate) => {
   const end = new Date(endDate)
+  end.setHours(0, 0, 0, 0) // إزالة الوقت من تاريخ الانتهاء
   const now = new Date()
-  const days = differenceInDays(end, now)
+  now.setHours(0, 0, 0, 0) // إزالة الوقت من التاريخ الحالي
+  const diffTime = end - now
+  const days = Math.floor(diffTime / (1000 * 60 * 60 * 24))
   return days
 }
 
@@ -38,12 +41,18 @@ export const formatDateArabic = (dateString) => {
 }
 
 export const isExpired = (endDate) => {
-  return isBefore(new Date(endDate), new Date())
+  const end = new Date(endDate)
+  end.setHours(0, 0, 0, 0)
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+  return isBefore(end, now)
 }
 
 export const isExpiringSoon = (endDate, days = 7) => {
   const end = new Date(endDate)
+  end.setHours(0, 0, 0, 0)
   const now = new Date()
+  now.setHours(0, 0, 0, 0)
   const daysRemaining = differenceInDays(end, now)
   return daysRemaining >= 0 && daysRemaining <= days
 }
