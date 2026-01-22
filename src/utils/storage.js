@@ -337,10 +337,24 @@ export const addSubscription = async (subscription) => {
     ...subscription,
     createdAt: new Date().toISOString()
   }
-  
+
   // محاولة إضافة إلى Firebase أولاً (إذا كان مُعدّاً)
   if (isFirebaseConfigured()) {
     try {
+      // التحقق من عدم وجود اشتراك مكرر بناءً على المحتوى
+      const existingSubs = await getSubscriptions()
+      const subscriptionKey = `${newSubscription.personName}_${newSubscription.subscriptionName}_${newSubscription.startDate}_${newSubscription.endDate}`
+      
+      const isDuplicate = existingSubs.some(sub => {
+        const subKey = `${sub.personName}_${sub.subscriptionName}_${sub.startDate}_${sub.endDate}`
+        return subKey === subscriptionKey
+      })
+      
+      if (isDuplicate) {
+        console.warn('⚠️ Duplicate subscription detected, skipping add')
+        throw new Error('DUPLICATE_SUBSCRIPTION')
+      }
+      
       console.log('📤 Attempting to add to Firebase...')
       console.log('📤 Data:', newSubscription)
       console.log('📤 Collection:', COLLECTION_NAME)
@@ -354,6 +368,13 @@ export const addSubscription = async (subscription) => {
       
       return { id: docRef.id, ...newSubscription }
     } catch (error) {
+      // إذا كان الخطأ متعلقاً بالتكرار، أبلغ المستخدم ولا تحاول Fallback
+      if (error.message === 'DUPLICATE_SUBSCRIPTION') {
+        console.warn('⚠️ هذا الاشتراك موجود بالفعل')
+        alert('⚠️ هذا الاشتراك موجود بالفعل!\n\nالاسم: ' + newSubscription.personName + '\nالخدمة: ' + newSubscription.subscriptionName)
+        throw error // أعد رمي الخطأ لمنع المتابعة
+      }
+      
       console.error('❌ Error adding subscription to Firebase:', error)
       console.error('Error details:', {
         code: error.code,
@@ -377,6 +398,20 @@ export const addSubscription = async (subscription) => {
   // Fallback إلى localStorage
   try {
     const subscriptions = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
+    
+    // التحقق من التكرار في localStorage أيضاً
+    const subscriptionKey = `${newSubscription.personName}_${newSubscription.subscriptionName}_${newSubscription.startDate}_${newSubscription.endDate}`
+    const isDuplicate = subscriptions.some(sub => {
+      const subKey = `${sub.personName}_${sub.subscriptionName}_${sub.startDate}_${sub.endDate}`
+      return subKey === subscriptionKey
+    })
+    
+    if (isDuplicate) {
+      console.warn('⚠️ Duplicate subscription detected in localStorage, skipping add')
+      alert('⚠️ هذا الاشتراك موجود بالفعل!\n\nالاسم: ' + newSubscription.personName + '\nالخدمة: ' + newSubscription.subscriptionName)
+      throw new Error('DUPLICATE_SUBSCRIPTION')
+    }
+    
     const newSub = {
       id: Date.now().toString(),
       ...newSubscription
@@ -386,6 +421,10 @@ export const addSubscription = async (subscription) => {
     console.log('✅ Added to localStorage')
     return newSub
   } catch (localError) {
+    // إذا كان الخطأ متعلقاً بالتكرار، أعد رميه
+    if (localError.message === 'DUPLICATE_SUBSCRIPTION') {
+      throw localError
+    }
     console.error('❌ Error adding to localStorage:', localError)
     throw localError
   }

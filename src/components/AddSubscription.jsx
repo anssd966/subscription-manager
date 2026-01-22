@@ -23,13 +23,24 @@ function AddSubscription() {
 
     const endDate = calculateEndDate(formData.startDate, formData.duration)
     
-    await addSubscription({
-      ...formData,
-      endDate
-    })
+    try {
+      await addSubscription({
+        ...formData,
+        endDate
+      })
 
-    alert('تم إضافة الاشتراك بنجاح!')
-    navigate('/')
+      alert('تم إضافة الاشتراك بنجاح!')
+      navigate('/')
+    } catch (error) {
+      // إذا كان الخطأ متعلقاً بالتكرار، لا نعيد التوجيه (المستخدم رأى الرسالة بالفعل)
+      if (error.message === 'DUPLICATE_SUBSCRIPTION') {
+        // لا نفعل شيء، المستخدم رأى الرسالة بالفعل
+        return
+      }
+      // للأخطاء الأخرى، أبلغ المستخدم
+      console.error('Error adding subscription:', error)
+      alert('حدث خطأ أثناء إضافة الاشتراك. يرجى المحاولة مرة أخرى.')
+    }
   }
 
   const handleChange = (e) => {
